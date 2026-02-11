@@ -6,7 +6,7 @@ Host:
 - PC: Dell Optiplex XE4
 - CPU: Intel Core i5-12500 vPro (18 MB cache, 6 cores, 12 threads, 3.00 GHz to 4.60 GHz, 65 W)
 - iGPU: Intel UHD Graphics 770
-- RAM: 2x 16 GB DDR4 3200 MHz
+- RAM: 2x 16 GB DDR5 PC5-4800 (Micron MTC8C1084S1UC48BA1)
 - dGPU: PNY NVIDIA RTX A1000 (8 GB GDDR6, 2304 CUDA cores, 72 Tensor cores, 18 RT cores, 50 W)
 - NVMe: 3x 500GB WD Blue SN580
 - dUSB: PCIe Insignia NS-PCIEC8 Renesas uPD720202 USB 3.0 Host Controller
