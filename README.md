@@ -11,11 +11,53 @@ Host:
 - NVMe: 3x 500GB WD Blue SN580
 - dUSB: PCIe Insignia NS-PCIEC8 Renesas uPD720202 USB 3.0 Host Controller
 
-Linux Host Setup Steps:
+## Linux Host Setup Steps
 
-1. TBD
+1. Give the NVIDIA dGPU to the VFIO driver instead of the host's default Noveau driver. Enter the PCIe IDs for both the video and audio portion of your GPU. Give the dUSB controller to the VFIO driver also, append PCIe ID of the USB controller. Add softdep lines to prevent the Linux kernel to claim the devices first.
+````
+$ cat /etc/modprobe.d/vfio.conf 
+softdep nouveau pre: vfio-pci
+softdep xhci_pci_renesas pre: vfio-pci
+options vfio-pci ids=10de:25b0,10de:2291,1912:0015
+````
+2. Add vfio drivers to be loaded at startup.
+```
+$ cat /etc/modules-load.d/vfio-pci.conf
+vfio
+vfio_iommu_type1
+vfio_pci
+```
+3. Add the following options to your `GRUB_CMDLINE_LINUX_DEFAULT`. Note that the `pcie_aspm=off` resolves USB controller reset issue after guest machine shutdown.
+```
+$ cat /etc/default/grub
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR=`( . /etc/os-release && echo ${NAME} )`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt pcie_aspm=off"
+GRUB_CMDLINE_LINUX=""
+```
+4. Regenerate initramfs and GRUB.
+```
+$ sudo update-initramfs -u -k all
+$ sudo update-grub
+```
 
-Set up Moonlight Logitech Extreme 3D joystick passhtrough on Moonlight:
+## Set up automatic monitor switchover based on whether a USB hub is present in the host or removed
+Use a USB switch device to connect a monitor USB hub into the host USB controller or into the guests dUSB controller. The following udev rule allows the host to monitor whether the hub is present and therefore follow the USB switch state.
+
+1. Create a new udev rule as shown below.
+```
+$ cat /etc/udev/rules.d/99-monitor-hub-switch.rules
+ACTION=="add", KERNEL=="1-7.1", SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="5409", RUN+="/usr/bin/ddcutil setvcp 0x60 0x11"
+ACTION=="remove", KERNEL=="1-7.1", SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="5409", RUN+="/usr/bin/ddcutil setvcp 0x60 0x0f"
+```
+2. Reload udev rules and re-trigger.
+```
+$ sudo udevadm control --reload-rules
+$ sudo udevadm trigger
+```
+
+## Set up Moonlight Logitech Extreme 3D joystick passhtrough on Moonlight
 
 1. Find where your `gamecontrollerdb.txt` is stored. On Mac OS, it is in `~/Library/Caches/Moonlight Game Streaming Project/Moonlight/gamecontrollerdb.txt`. The following exerpt will map the joystick axes and buttons to a virtual Xbox Controller which Moonlight can forward. You can then assign the virtual Xbox Controller in your flight simulator settings.
 ```
